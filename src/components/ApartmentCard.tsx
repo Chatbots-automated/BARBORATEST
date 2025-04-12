@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, ChevronRight } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { Apartment } from '../types';
 
 interface ApartmentCardProps {
@@ -13,24 +13,34 @@ export function ApartmentCard({ apartment, onSelect }: ApartmentCardProps) {
       <img 
         src={apartment.image_url || 'https://via.placeholder.com/600x400?text=No+Image'} 
         alt={apartment.name}
-        className="w-full h-48 object-cover"
+        className="w-full h-64 object-cover"
       />
       <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-gray-900">{apartment.name}</h3>
-          <span className="text-lg font-bold text-green-600">
-            €{apartment.price_per_night}/night
-          </span>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-semibold text-[#2D2D2D] mb-2">{apartment.name}</h3>
+            <p className="text-gray-600 text-sm">2 asmenims</p>
+          </div>
+          <div className="text-right">
+            <div className="bg-[#8B8455] text-white px-3 py-1 rounded-full text-sm">
+              nuo €{apartment.price_per_night}
+              <span className="text-xs ml-1">už naktį</span>
+            </div>
+          </div>
         </div>
-        <p className="text-gray-600 mb-4 line-clamp-2">{apartment.description || 'No description available'}</p>
+        
+        <div className="space-y-3 mb-6">
+          <p className="text-gray-600 line-clamp-2">{apartment.description || 'No description available'}</p>
+          <div className="text-sm text-gray-600">Pilnai įrengtas</div>
+          <div className="text-sm text-gray-600">Ramiam poilsiui</div>
+        </div>
 
         <button
           onClick={() => onSelect(apartment)}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          className="w-full bg-[#8B8455] text-white py-3 rounded hover:bg-[#726D46] transition-colors flex items-center justify-center gap-2 font-medium"
         >
           <Calendar size={20} />
-          Book Now
-          <ChevronRight size={20} />
+          REZERVUOTI
         </button>
       </div>
     </div>

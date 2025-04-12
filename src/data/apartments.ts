@@ -3,7 +3,7 @@ import { Apartment } from '../types';
 export const apartments: Apartment[] = [
   {
     id: 'gintaras',
-    name: 'Gintaras',
+    name: 'Senovinis medinis namas "Gintaras"',
     description: 'A cozy apartment with stunning amber-colored interiors, perfect for couples.',
     pricePerNight: 0.5,
     imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267',
@@ -11,7 +11,7 @@ export const apartments: Apartment[] = [
   },
   {
     id: 'pikulas',
-    name: 'Pikulas',
+    name: 'Dvivietis apartamentas "Pikulas"',
     description: 'Modern and spacious apartment with traditional Lithuanian elements.',
     pricePerNight: 150,
     imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688',
@@ -19,7 +19,7 @@ export const apartments: Apartment[] = [
   },
   {
     id: 'mara',
-    name: 'Mara',
+    name: 'Šeimyninis apartamentas "Māra"',
     description: 'Luxurious waterfront apartment with panoramic views.',
     pricePerNight: 180,
     imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00',
@@ -27,7 +27,7 @@ export const apartments: Apartment[] = [
   },
   {
     id: 'medeine',
-    name: 'Medeine',
+    name: 'Namelis dviems "Medeinė"',
     description: 'Forest-themed apartment surrounded by nature.',
     pricePerNight: 140,
     imageUrl: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85',

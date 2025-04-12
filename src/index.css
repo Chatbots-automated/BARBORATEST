@@ -3,31 +3,51 @@
 @tailwind utilities;
 
 .react-datepicker {
-  @apply font-sans border-0 shadow-lg rounded-lg overflow-hidden;
+  @apply font-sans border-0 shadow-xl rounded-2xl overflow-hidden;
 }
 
 .react-datepicker__header {
-  @apply bg-blue-50 border-0 rounded-t-lg;
+  @apply bg-primary/5 border-0 rounded-t-2xl px-2;
+}
+
+.react-datepicker__month-container {
+  @apply bg-white;
 }
 
 .react-datepicker__current-month {
-  @apply text-gray-900 font-semibold py-2;
+  @apply text-gray-900 font-semibold py-3;
+}
+
+.react-datepicker__day-names {
+  @apply bg-white border-b border-gray-100;
 }
 
 .react-datepicker__day-name {
-  @apply text-gray-600 font-medium;
+  @apply text-gray-500 font-medium text-sm py-2;
+}
+
+.react-datepicker__month {
+  @apply p-2;
 }
 
 .react-datepicker__day {
-  @apply hover:bg-blue-50 rounded-full transition-colors;
+  @apply text-sm transition-all m-1 py-2 w-8 h-8 flex items-center justify-center;
+}
+
+.react-datepicker__day:hover:not(.react-datepicker__day--disabled) {
+  @apply bg-primary/10 text-primary rounded-full;
 }
 
 .react-datepicker__day--selected {
-  @apply bg-blue-600 text-white rounded-full hover:bg-blue-700;
+  @apply bg-primary text-white hover:bg-primary-dark rounded-full;
+}
+
+.react-datepicker__day--keyboard-selected {
+  @apply bg-primary text-white hover:bg-primary-dark rounded-full;
 }
 
 .react-datepicker__day--disabled {
-  @apply text-gray-300 hover:bg-transparent cursor-not-allowed;
+  @apply hover:bg-transparent cursor-not-allowed opacity-50;
 }
 
 .react-datepicker__navigation {
@@ -40,4 +60,35 @@
 
 .react-datepicker__navigation--next {
   @apply right-3;
+}
+
+.react-datepicker__day--outside-month {
+  @apply opacity-30;
+}
+
+.react-datepicker-popper {
+  @apply z-[60];
+}
+
+/* Custom styles for the availability calendar */
+.availability-calendar .react-datepicker__day--disabled {
+  @apply bg-red-50 text-red-300 opacity-100 no-underline;
+}
+
+.availability-calendar .react-datepicker__day:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
+  @apply bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700;
+}
+
+.availability-calendar .react-datepicker__day--selected {
+  @apply bg-primary text-white ring-2 ring-primary ring-offset-2;
+}
+
+/* Hover effects */
+.availability-calendar .react-datepicker__day:hover:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
+  @apply transform scale-110 transition-transform;
+}
+
+/* Today's date highlight */
+.availability-calendar .react-datepicker__day--today {
+  @apply font-bold ring-2 ring-primary/30 ring-offset-2;
 }

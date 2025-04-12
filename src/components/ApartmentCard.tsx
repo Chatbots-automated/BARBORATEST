@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar } from 'lucide-react';
 import { Apartment } from '../types';
 
@@ -10,15 +11,19 @@ interface ApartmentCardProps {
 export function ApartmentCard({ apartment, onSelect }: ApartmentCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-      <img 
-        src={apartment.image_url || 'https://via.placeholder.com/600x400?text=No+Image'} 
-        alt={apartment.name}
-        className="w-full h-64 object-cover"
-      />
+      <Link to={`/apartments/${apartment.id}`}>
+        <img 
+          src={apartment.image_url || 'https://via.placeholder.com/600x400?text=No+Image'} 
+          alt={apartment.name}
+          className="w-full h-64 object-cover"
+        />
+      </Link>
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-xl font-semibold text-[#2D2D2D] mb-2">{apartment.name}</h3>
+            <Link to={`/apartments/${apartment.id}`} className="hover:text-primary">
+              <h3 className="text-xl font-semibold text-[#2D2D2D] mb-2">{apartment.name}</h3>
+            </Link>
             <p className="text-gray-600 text-sm">2 asmenims</p>
           </div>
           <div className="text-right">

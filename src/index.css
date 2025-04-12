@@ -23,7 +23,7 @@
 }
 
 .react-datepicker__day-name {
-  @apply text-gray-500 font-medium text-sm py-2;
+  @apply text-gray-500 font-medium text-sm py-2 w-8 inline-block text-center;
 }
 
 .react-datepicker__month {
@@ -31,7 +31,7 @@
 }
 
 .react-datepicker__day {
-  @apply text-sm transition-all m-1 py-2 w-8 h-8 flex items-center justify-center;
+  @apply text-sm m-1 inline-block text-center;
 }
 
 .react-datepicker__day:hover:not(.react-datepicker__day--disabled) {
@@ -72,11 +72,11 @@
 
 /* Custom styles for the availability calendar */
 .availability-calendar .react-datepicker__day--disabled {
-  @apply bg-red-50 text-red-300 opacity-100 no-underline;
+  @apply bg-red-50 text-red-300 opacity-100 no-underline inline-block text-center;
 }
 
 .availability-calendar .react-datepicker__day:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
-  @apply bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700;
+  @apply bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 inline-block text-center;
 }
 
 .availability-calendar .react-datepicker__day--selected {
@@ -91,4 +91,13 @@
 /* Today's date highlight */
 .availability-calendar .react-datepicker__day--today {
   @apply font-bold ring-2 ring-primary/30 ring-offset-2;
+}
+
+/* Fix for day alignment */
+.react-datepicker__week {
+  @apply flex justify-between;
+}
+
+.react-datepicker__day {
+  @apply w-8 h-8 flex items-center justify-center;
 }

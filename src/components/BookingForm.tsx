@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { format, differenceInDays, eachDayOfInterval, parseISO, isSameDay, subDays } from 'date-fns';
-import { Calendar, Tag, X, Check, Loader2, AlertCircle } from 'lucide-react';
+import { lt } from 'date-fns/locale';
+import { Calendar, Tag, X, Check, Loader2, AlertCircle, Users, Phone, Globe } from 'lucide-react';
 import { Apartment, BookingDetails, Coupon } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -14,6 +15,9 @@ interface BookingFormProps {
 export function BookingForm({ apartment, onClose }: BookingFormProps) {
   const [bookingDetails, setBookingDetails] = useState<Partial<BookingDetails>>({
     apartmentId: apartment.id,
+    numberOfGuests: 2,
+    hasPets: false,
+    extraBed: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +52,6 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
         data.forEach(booking => {
           const start = parseISO(booking.check_in);
           const end = parseISO(booking.check_out);
-          // Only block the nights the guest is staying, not the check-out day
           const daysInRange = eachDayOfInterval({ start, end: subDays(end, 1) });
           allDates.push(...daysInRange);
         });
@@ -66,6 +69,25 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
 
     fetchBookedDates();
   }, [apartment.name]);
+
+  const calculateTotalPrice = (numberOfNights: number) => {
+    let totalPrice = numberOfNights * apartment.price_per_night;
+    
+    if (bookingDetails.hasPets) {
+      totalPrice += 10; // Pet fee
+    }
+    
+    if (apartment.id === 'pikulas' && bookingDetails.extraBed) {
+      totalPrice += 15; // Extra bed fee for Pikulas
+    }
+
+    if (appliedCoupon) {
+      const discount = totalPrice * (appliedCoupon.discount_percent / 100);
+      totalPrice -= discount;
+    }
+
+    return totalPrice;
+  };
 
   const validateCoupon = async (code: string) => {
     setIsValidatingCoupon(true);
@@ -150,29 +172,18 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
     setError(null);
   };
 
-  const calculateTotalPrice = (numberOfNights: number) => {
-    let totalPrice = numberOfNights * apartment.price_per_night;
-
-    if (appliedCoupon) {
-      const discount = totalPrice * (appliedCoupon.discount_percent / 100);
-      totalPrice -= discount;
-    }
-
-    return totalPrice;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { checkIn, checkOut, guestEmail, guestName } = bookingDetails;
+    const { checkIn, checkOut, guestEmail, guestName, country, phoneNumber, numberOfGuests } = bookingDetails;
 
-    if (!checkIn || !checkOut || !guestEmail || !guestName) {
-      setError('Please fill in all required fields');
+    if (!checkIn || !checkOut || !guestEmail || !guestName || !country || !phoneNumber || !numberOfGuests) {
+      setError('Prašome užpildyti visus privalomus laukus');
       return;
     }
 
     if (checkOut <= checkIn) {
-      setError('Check-out date must be after check-in date');
+      setError('Išvykimo data turi būti vėlesnė nei atvykimo data');
       return;
     }
 
@@ -184,9 +195,9 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
     setError(null);
 
     try {
-      const { checkIn, checkOut, guestEmail, guestName } = bookingDetails;
+      const { checkIn, checkOut, guestEmail, guestName, country, phoneNumber, numberOfGuests, hasPets, extraBed } = bookingDetails;
 
-      if (!checkIn || !checkOut || !guestEmail || !guestName) {
+      if (!checkIn || !checkOut || !guestEmail || !guestName || !country || !phoneNumber || !numberOfGuests) {
         throw new Error('Please fill in all required fields');
       }
 
@@ -227,6 +238,11 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
         'metadata[checkOut]': checkOut.toISOString(),
         'metadata[email]': guestEmail,
         'metadata[guestName]': guestName,
+        'metadata[country]': country,
+        'metadata[phoneNumber]': phoneNumber,
+        'metadata[numberOfGuests]': numberOfGuests.toString(),
+        'metadata[hasPets]': hasPets ? 'true' : 'false',
+        'metadata[extraBed]': extraBed ? 'true' : 'false',
         'metadata[price]': totalPrice.toString(),
       });
 
@@ -267,23 +283,10 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
 
   const totalPrice = calculateTotalPrice(numberOfNights);
 
-  const renderDayContents = (day: number, date: Date) => {
-    const isBooked = isDateBooked(date);
-    return (
-      <div className={`w-8 h-8 flex items-center justify-center rounded-full
-        ${isBooked ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}
-        ${bookingDetails.checkIn && isSameDay(date, bookingDetails.checkIn) ? 'ring-2 ring-primary' : ''}
-        ${bookingDetails.checkOut && isSameDay(date, bookingDetails.checkOut) ? 'ring-2 ring-primary' : ''}
-      `}>
-        {day}
-      </div>
-    );
-  };
-
   if (showSummary) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative my-8">
           <button
             onClick={() => setShowSummary(false)}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -291,50 +294,74 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
             <X className="w-6 h-6" />
           </button>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Booking Summary</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Užsakymo santrauka</h2>
 
           <div className="space-y-6">
             <div className="bg-gray-50 rounded-xl p-6 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Apartment</span>
+                <span className="text-gray-600">Apartamentai</span>
                 <span className="font-medium">{apartment.name}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Check-in</span>
-                <span className="font-medium">{format(bookingDetails.checkIn!, 'MMM d, yyyy')}</span>
+                <span className="text-gray-600">Atvykimas</span>
+                <span className="font-medium">{format(bookingDetails.checkIn!, 'yyyy-MM-dd')}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Check-out</span>
-                <span className="font-medium">{format(bookingDetails.checkOut!, 'MMM d, yyyy')}</span>
+                <span className="text-gray-600">Išvykimas</span>
+                <span className="font-medium">{format(bookingDetails.checkOut!, 'yyyy-MM-dd')}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Guest</span>
+                <span className="text-gray-600">Svečias</span>
                 <span className="font-medium">{bookingDetails.guestName}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Email</span>
+                <span className="text-gray-600">El. paštas</span>
                 <span className="font-medium">{bookingDetails.guestEmail}</span>
               </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Šalis</span>
+                <span className="font-medium">{bookingDetails.country}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Telefonas</span>
+                <span className="font-medium">{bookingDetails.phoneNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Svečių skaičius</span>
+                <span className="font-medium">{bookingDetails.numberOfGuests}</span>
+              </div>
+              {bookingDetails.hasPets && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Augintinio mokestis</span>
+                  <span className="font-medium">10€</span>
+                </div>
+              )}
+              {apartment.id === 'pikulas' && bookingDetails.extraBed && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Papildoma lova</span>
+                  <span className="font-medium">15€</span>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-gray-200 pt-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600">Price per night</span>
-                <span className="font-medium">€{apartment.price_per_night}</span>
+                <span className="text-gray-600">Kaina už naktį</span>
+                <span className="font-medium">{apartment.price_per_night}€</span>
               </div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600">Number of nights</span>
+                <span className="text-gray-600">Naktų skaičius</span>
                 <span className="font-medium">{numberOfNights}</span>
               </div>
               {appliedCoupon && (
                 <div className="flex justify-between items-center mb-2 text-green-600">
-                  <span>Discount ({appliedCoupon.discount_percent}%)</span>
-                  <span>-€{(numberOfNights * apartment.price_per_night * (appliedCoupon.discount_percent / 100)).toFixed(2)}</span>
+                  <span>Nuolaida ({appliedCoupon.discount_percent}%)</span>
+                  <span>-{(numberOfNights * apartment.price_per_night * (appliedCoupon.discount_percent / 100)).toFixed(2)}€</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-lg font-bold mt-4 pt-4 border-t border-gray-200">
-                <span>Total</span>
-                <span>€{totalPrice.toFixed(2)}</span>
+                <span>Viso</span>
+                <span>{totalPrice.toFixed(2)}€</span>
               </div>
             </div>
 
@@ -353,12 +380,12 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Processing...
+                  Apdorojama...
                 </>
               ) : (
                 <>
                   <Check className="w-5 h-5" />
-                  Confirm Booking
+                  Patvirtinti užsakymą
                 </>
               )}
             </button>
@@ -369,8 +396,8 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative my-8">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -382,7 +409,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
           <div className="bg-primary/10 p-2 rounded-lg">
             <Calendar className="w-6 h-6 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Book Your Stay</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Rezervacija</h2>
         </div>
 
         {error && (
@@ -396,35 +423,35 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Check-in Date
+                Atvykimo data
               </label>
               <DatePicker
                 selected={bookingDetails.checkIn}
                 onChange={(date) => handleDateChange('checkIn', date)}
                 minDate={new Date()}
                 excludeDates={bookedDates}
-                dateFormat="MMM d, yyyy"
+                dateFormat="yyyy-MM-dd"
+                locale={lt}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
-                placeholderText="Select date"
+                placeholderText="Pasirinkite datą"
                 showPopperArrow={false}
-                renderDayContents={renderDayContents}
                 calendarClassName="availability-calendar"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Check-out Date
+                Išvykimo data
               </label>
               <DatePicker
                 selected={bookingDetails.checkOut}
                 onChange={(date) => handleDateChange('checkOut', date)}
                 minDate={bookingDetails.checkIn || new Date()}
                 excludeDates={bookedDates}
-                dateFormat="MMM d, yyyy"
+                dateFormat="yyyy-MM-dd"
+                locale={lt}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
-                placeholderText="Select date"
+                placeholderText="Pasirinkite datą"
                 showPopperArrow={false}
-                renderDayContents={renderDayContents}
                 calendarClassName="availability-calendar"
               />
             </div>
@@ -432,28 +459,101 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+              Vardas Pavardė
             </label>
             <input
               type="text"
               value={bookingDetails.guestName || ''}
               onChange={(e) => setBookingDetails({ ...bookingDetails, guestName: e.target.value })}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Enter your full name"
+              placeholder="Įveskite vardą ir pavardę"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
+              El. pašto adresas
             </label>
             <input
               type="email"
               value={bookingDetails.guestEmail || ''}
               onChange={(e) => setBookingDetails({ ...bookingDetails, guestEmail: e.target.value })}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Enter your email"
+              placeholder="Įveskite el. paštą"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Šalis
+            </label>
+            <div className="relative">
+              <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={bookingDetails.country || ''}
+                onChange={(e) => setBookingDetails({ ...bookingDetails, country: e.target.value })}
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Įveskite šalį"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Telefono numeris
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="tel"
+                value={bookingDetails.phoneNumber || ''}
+                onChange={(e) => setBookingDetails({ ...bookingDetails, phoneNumber: e.target.value })}
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="+370"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Svečių skaičius
+            </label>
+            <div className="relative">
+              <Users className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="number"
+                min="1"
+                max="4"
+                value={bookingDetails.numberOfGuests || 2}
+                onChange={(e) => setBookingDetails({ ...bookingDetails, numberOfGuests: parseInt(e.target.value) })}
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={bookingDetails.hasPets || false}
+                onChange={(e) => setBookingDetails({ ...bookingDetails, hasPets: e.target.checked })}
+                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-gray-700">Augintinio mokestis (10€)</span>
+            </label>
+
+            {apartment.id === 'pikulas' && (
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={bookingDetails.extraBed || false}
+                  onChange={(e) => setBookingDetails({ ...bookingDetails, extraBed: e.target.checked })}
+                  className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <span className="text-gray-700">Papildoma lova (15€)</span>
+              </label>
+            )}
           </div>
 
           <div className="flex gap-2">
@@ -462,7 +562,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
               className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Enter coupon code"
+              placeholder="Nuolaidos kodas"
             />
             <button
               type="button"
@@ -481,28 +581,40 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
           {appliedCoupon && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
               <Check className="w-5 h-5" />
-              <p>Coupon applied: {appliedCoupon.discount_percent}% discount</p>
+              <p>Pritaikyta nuolaida: {appliedCoupon.discount_percent}%</p>
             </div>
           )}
 
           <div className="bg-gray-50 rounded-xl p-6 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Price per night</span>
-              <span className="font-medium">€{apartment.price_per_night}</span>
+              <span className="text-gray-600">Kaina už naktį</span>
+              <span className="font-medium">{apartment.price_per_night}€</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Number of nights</span>
+              <span className="text-gray-600">Naktų skaičius</span>
               <span className="font-medium">{numberOfNights}</span>
             </div>
+            {bookingDetails.hasPets && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Augintinio mokestis</span>
+                <span className="font-medium">10€</span>
+              </div>
+            )}
+            {apartment.id === 'pikulas' && bookingDetails.extraBed && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Papildoma lova</span>
+                <span className="font-medium">15€</span>
+              </div>
+            )}
             {appliedCoupon && (
               <div className="flex justify-between items-center text-green-600">
-                <span>Discount ({appliedCoupon.discount_percent}%)</span>
-                <span>-€{(numberOfNights * apartment.price_per_night * (appliedCoupon.discount_percent / 100)).toFixed(2)}</span>
+                <span>Nuolaida ({appliedCoupon.discount_percent}%)</span>
+                <span>-{(numberOfNights * apartment.price_per_night * (appliedCoupon.discount_percent / 100)).toFixed(2)}€</span>
               </div>
             )}
             <div className="flex justify-between items-center text-lg font-bold pt-3 border-t border-gray-200">
-              <span>Total</span>
-              <span>€{totalPrice.toFixed(2)}</span>
+              <span>Viso</span>
+              <span>{totalPrice.toFixed(2)}€</span>
             </div>
           </div>
 
@@ -511,7 +623,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center gap-2"
           >
             <Calendar className="w-5 h-5" />
-            Continue to Book
+            Tęsti rezervaciją
           </button>
         </form>
       </div>

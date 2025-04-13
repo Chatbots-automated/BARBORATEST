@@ -12,6 +12,11 @@ export interface BookingDetails {
   checkOut: Date;
   guestName: string;
   guestEmail: string;
+  country: string;
+  phoneNumber: string;
+  numberOfGuests: number;
+  hasPets: boolean;
+  extraBed: boolean;
 }
 
 export interface Coupon {

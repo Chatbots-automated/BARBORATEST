@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* DatePicker Styles */
 .react-datepicker {
   @apply font-sans border-0 shadow-xl rounded-2xl overflow-hidden;
 }
@@ -31,11 +42,11 @@
 }
 
 .react-datepicker__day {
-  @apply text-sm m-1 inline-block text-center;
+  @apply text-sm m-1 inline-block text-center transition-all duration-200;
 }
 
 .react-datepicker__day:hover:not(.react-datepicker__day--disabled) {
-  @apply bg-primary/10 text-primary rounded-full;
+  @apply bg-primary/10 text-primary rounded-full transform scale-110;
 }
 
 .react-datepicker__day--selected {
@@ -100,4 +111,14 @@
 
 .react-datepicker__day {
   @apply w-8 h-8 flex items-center justify-center;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out forwards;
 }

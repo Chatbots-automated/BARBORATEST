@@ -3,7 +3,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { format, differenceInDays, eachDayOfInterval, parseISO, isSameDay, subDays } from 'date-fns';
 import { lt } from 'date-fns/locale';
-import { Calendar, Tag, X, Check, Loader2, AlertCircle, Users, Phone, Globe } from 'lucide-react';
+import { Calendar, Tag, X, Check, Loader2, AlertCircle, Users, Phone, Globe, Info, ArrowRight } from 'lucide-react';
 import { Apartment, BookingDetails, Coupon } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -13,6 +13,7 @@ interface BookingFormProps {
 }
 
 export function BookingForm({ apartment, onClose }: BookingFormProps) {
+  const [step, setStep] = useState(1);
   const [bookingDetails, setBookingDetails] = useState<Partial<BookingDetails>>({
     apartmentId: apartment.id,
     numberOfGuests: 2,
@@ -26,6 +27,8 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [acceptedRules, setAcceptedRules] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   const getApartmentBaseName = (fullName: string): string => {
     const nameMap: { [key: string]: string } = {
@@ -74,11 +77,11 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
     let totalPrice = numberOfNights * apartment.price_per_night;
     
     if (bookingDetails.hasPets) {
-      totalPrice += 10; // Pet fee
+      totalPrice += 10;
     }
     
     if (apartment.id === 'pikulas' && bookingDetails.extraBed) {
-      totalPrice += 15; // Extra bed fee for Pikulas
+      totalPrice += 15;
     }
 
     if (appliedCoupon) {
@@ -172,9 +175,23 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
     setError(null);
   };
 
+  const handleNextStep = () => {
+    if (!bookingDetails.checkIn || !bookingDetails.checkOut) {
+      setError('Prašome pasirinkti atvykimo ir išvykimo datas');
+      return;
+    }
+    setStep(2);
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!acceptedRules) {
+      setError('Prašome susipažinti ir sutikti su taisyklėmis prieš tęsiant');
+      return;
+    }
+
     const { checkIn, checkOut, guestEmail, guestName, country, phoneNumber, numberOfGuests } = bookingDetails;
 
     if (!checkIn || !checkOut || !guestEmail || !guestName || !country || !phoneNumber || !numberOfGuests) {
@@ -191,6 +208,11 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
   };
 
   const handleConfirmBooking = async () => {
+    if (!acceptedRules) {
+      setError('Prašome susipažinti ir sutikti su taisyklėmis prieš tęsiant');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -244,6 +266,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
         'metadata[hasPets]': hasPets ? 'true' : 'false',
         'metadata[extraBed]': extraBed ? 'true' : 'false',
         'metadata[price]': totalPrice.toString(),
+        'metadata[acceptedRules]': 'true',
       });
 
       if (appliedCoupon) {
@@ -282,6 +305,120 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
     : 0;
 
   const totalPrice = calculateTotalPrice(numberOfNights);
+
+  if (showRules) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="bg-white rounded-2xl p-8 max-w-3xl w-full shadow-2xl relative my-8">
+          <button
+            onClick={() => setShowRules(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Vidaus tvarkos taisyklės</h2>
+
+          <div className="prose prose-sm max-w-none overflow-y-auto max-h-[70vh] pr-4">
+            <h3 className="text-xl font-bold mb-4">Taisyklės, kuriomis saugome ramybę ir bendrystę.</h3>
+
+            <p className="mb-6">
+              Šios taisyklės sukurtos tam, kad mūsų nuomuojami namai, juos supanti gamta ir Jūsų poilsis būtų saugūs, harmoningai sugyventų tarpusavyje. Rezervuodami apsistojimą Girios Horizonte ir atvykdami į mūsų erdves, patvirtinate, kad susipažinote su šiomis taisyklėmis ir joms pritariate. Jei jaučiate, kad šios taisyklės Jums netinka – kviečiame susilaikyti nuo rezervacijos. Kiekvienas svečias, atvykstantis į Girios Horizontą, įsipareigoja atsakingai perskaityti šias taisykles bei kitą informaciją, kurią taip pat galite rasite, kai atliksite rezervaciją.
+            </p>
+
+            <div className="mb-6">
+              <p className="font-semibold">Atvykimo laikas nuo 15:00</p>
+              <p className="font-semibold">Išvykimo laikas iki 11:00</p>
+            </div>
+
+            <p className="mb-6">
+              Apmokėjus rezervaciją, Jūs patvirtinate, kad sutinkate su visomis mūsų taisyklėmis. Neišbuvus numatyto(rezervuoto) laiko, pinigai negražinami.
+            </p>
+
+            <h3 className="text-lg font-bold mb-4">REZERVACIJOS ATŠAUKIMAS/PERKĖLIMAS</h3>
+            <p className="mb-6">
+              Rezervacijas atšaukti, perkelti rezervacijos datą galima likus ne mažiau nei 10 dienų iki atvykimo datos. Galimas 100% pinigų grąžinimas. Vėliau rezervacijų atšaukimas negalimas dėl jokių priežasčių – pasikeitusių planų, ligų ar kitų aplinkybių. Jūsų rezervacijos laiku galimas ir kitų žmonių atvykimas, bet apie tai reikia pranešti iš anksto. Taip pat atvykstantieji žmonės turi būti susipažinę su mūsų sąlygomis ir taisyklėmis. Perkėlus datą, jei tos datos suma mažesnė – skirtumas negrąžinamas, jei tos datos suma didesnė, reikalinga skirtumo priemoka. Rezervacijos perkėlimas galimas tik vieną kartą. Rezervuojant mūsų paslaugas, Jūs sutinkate, kad Jūsų asmens duomenys bus naudojami rezervavimo procedūrai įvykdyti (pagal 1997-09-28 sutarties dėl asmens duomenų apsaugos sąlygas).
+            </p>
+
+            <h3 className="text-lg font-bold mb-4">AUGINTINIAI</h3>
+            <p className="mb-6">
+              Priimame ir Jūsų augintinius. PRIIMAME TIK ŠUNIS. Sumokėjus papildomą 10 eur mokestį galima atvykti su naminiais gyvūnais. Gyvūno paliktas išmatas privalo surinkti jo šeimininkai. Už bet kokią augintinių padarytą žalą atsako jų šeimininkai. Priimami tik sveiki, neagresyvūs, stabilios psichikos gyvūnai. Svečias, atvykęs su augintiniu, yra atsakingas už Girios Horizonte gyvenantį gyvūną ir įsipareigoja laikytis šių taisyklių bei visiškai atlyginti gyvūno padarytą žalą Girios Horizonto, teritorijai ir/ar tretiesiems asmenims. Laikant gyvūną namelyje nesuderinus iš anksto - taikoma 100 Eur/d. bauda.
+            </p>
+
+            <h3 className="text-lg font-bold mb-4">POILSIAUTOJAMS DRAUDŽIAMA</h3>
+            <ul className="list-disc pl-5 mb-6">
+              <li>Rūkyti Girios Horizonto teritorijoje griežtai draudžiama. Negalimas ir elektroninių cigarečių, "woopų" ir panašaus tipo rūkymo priemonių, kaljanų naudojimas apartamentų, namelių bei namo ir pirties viduje.</li>
+              <li>Draudžiama triukšmauti, garsiai klausytis muzikos. Girios Horizonto teritorija skirta tik ramiam poilsiui, tad labai prašome gerbti visų privatumą ir ramybę. Ramybės bei tylos laikas nuo 22:00 - 08:00.</li>
+              <li>Šiukšlinti ar kitaip niokoti teritoriją ar namelių bei pirties vidaus inventorių.</li>
+              <li>Pasikviesti papildomų draugų, žmonių nei nakvynei, nei trumpam pabuvimui - griežtai draudžiama.</li>
+              <li>Nesimaudykite apsvaigę nuo alkoholio ar kitų psichiką veikiančių medžiagų.</li>
+            </ul>
+
+            <h3 className="text-lg font-bold mb-4">PRIEŠGAISRINĖS SAUGOS IR SAUGAUS ELGESIO TAISYKLĖS</h3>
+            <ul className="list-disc pl-5 mb-6">
+              <li>Kadangi Girios Horizontas yra įsikūręs miškingoje teritorijoje, tai bet kokios ugnies kūrenimas lauke, Girios Horizonto teritorijoje negalimas ir draudžiamas iškyrūs tam padarytas specialias laužavietes ir griliaus vietas.</li>
+              <li>Žvakės lauke gali būti degamos tik su priežiūra ir specialiuose induose. Be priežiūros uždegtų žvakių žibintuose palikti negalima.</li>
+              <li>Patalpose žvakes galima deginti tik tam skirtose žvakidėse, žvakių be priežiūros palikti negalima.</li>
+              <li>Gintaro namo viduje esantį židinį galima kūrenti, bet tik su priežiūra ir GRIEŽTAI draudžiama palikti židinį su degančią ar rusenančia liepsna. Galima kūrenti tik malkas jokių kitų atliekų negalima dėti į židinį. Laikytis saugaus atstumo nuo židinio.</li>
+              <li>Visoje Girios Horizonto teritorijoje draudžiama naudoti fejerverkus.</li>
+              <li>Naudotis elektros prietaisais, laikantis saugumo reikalavimų.</li>
+              <li>Nepalikti be priežiūros įjungtų elektros prietaisų.</li>
+            </ul>
+
+            <h3 className="text-lg font-bold mb-4">POILSIAUTOJŲ ATSAKOMYBĖ</h3>
+            <ul className="list-disc pl-5 mb-6">
+              <li>Už atsivežto maisto kokybę ir šviežumą, atsako patys poilsiautojai.</li>
+              <li>Poilsiautojui susižalojus pačiam arba sužalojus savo turtą dėl savo kaltės, pažeidžiant saugaus elgesio, priešgaisrines ir vidaus tvarkos taisykles, paslaugos teikėjas už tai neatsako.</li>
+              <li>Už nelaimingus atsitikimus, galinčius įvykti Girios Horizonto teritorijoje ar už jos ribų (apartamentų, namo ar namelio viduje, terasoje, visoje teritorijoje, maudantis ežere, dviračių žygyje ir t.t.) yra atsakingi patys poilsiautojai.</li>
+              <li>Už nelaimingus atsitikimus, įvykusius dėl alkoholio, atsako pats poilsiautojas.</li>
+              <li>Poilsiautojai visiškai materialiai atsako už sugadintą ar sunaikintą nameliuose ir Girios Horizonto teritorijoje esantį kilnojamąjį ir nekilnojamąjį turtą, bei materialines vertybes (už padarytą materialinę žalą poilsiautojas atsako LR įstatymų nustatyta tvarka).</li>
+              <li>Dėl poilsiautojų neatsargumo kilus gaisrui, kuris sugadino namelius ar aplinkines teritorijas, už visus dėl to atsiradusius nuostolius atsako poilsiautojai.</li>
+              <li>Aparatamentuose, nameliuose ir name, ir jų teritorijoje esantys daiktai yra sodybos nuosavybė, todėl poilsiautojas (-iai) neturi teisės juos pasiimti išvykdamas iš sodybos.</li>
+              <li>Jei pastebite kokius gedimus ar pažeidimus, praneškite nedelsdami. Už sugadintus prietaisus, ilgalaikį ir trumpalaikį turtą taikoma bauda, kurią įvardija Girios Horizonto administracija.</li>
+              <li>Atvykus su vaikais, rūpintis jų saugumu. Už jų priežiūrą teritorijoje atsakomybę prisiima tėvai/globėjai, su kuriais jis atvyko.</li>
+              <li>Iškylaujant lauke nenaudoti kambaryje esančių pledukų (nebent apsijuosti), rakšluosčių, antklodžių ar pagalvėlių.</li>
+              <li>Girios Horizonto administratoriai turi teisę išprašyti iš teritorijos tuos lankytojus, kurie nesilaiko vidaus taisyklių, savo elgesiu ir veiksmais daro žalą teritorijos infrastruktūrai. Tokiu atveju rezervacijos mokestis negrąžinamas.</li>
+            </ul>
+
+            <h3 className="text-lg font-bold mb-4">PIRTIES DRUSKA TAISYKLĖS</h3>
+            <ul className="list-disc pl-5 mb-6">
+              <li>Į pirtį prašome ateiti ir išeiti numatytu ir jums paskirtu laiku, - kadangi prieš jus ar po jūsų, pirtyje gali lankytis ir kiti svečiai.</li>
+              <li>Pirties zonoje rekomenduojame turėti ir avėti šlepetes, atkreipkite dėmesį, grindys gali būti slidžios.</li>
+              <li>Rekomenduojama alkoholio nevartoti pirties procedūrų metu.</li>
+              <li>Muzikos galima klausytis tik ne ramybės ir tylos laiku (nuo 22:00-08:00)</li>
+              <li>Panaudotus Arbatos puodelius, vyno taures ar kitus indus privaloma išsiplauti ir padėti į vietą.</li>
+              <li>Pirties reikiamą tekstilę, svečiai įsipareigoja turėti savo asmeninę (rankšluosčiai, chalatai, šlepetės ir pan).</li>
+            </ul>
+
+            <h3 className="text-lg font-bold mb-4">Pirtyje Druska draudžiama</h3>
+            <ul className="list-disc pl-5 mb-6">
+              <li>Pirtyje naudoti savo šveitiklius, aliejus, mesų ar kitas priemones.</li>
+              <li>Šokinėti nuo lieptelio į ežerą. Ežeras seklus ir yra dumblo.</li>
+              <li>Pirties patalpose bei visoje teritorijoje rūkyti(garinti).</li>
+              <li>Triukšmauti.</li>
+              <li>Pirties lankytojai pilnai atsakingi už savo sveikatą ir saugumą.</li>
+              <li>švykstant, paliekame pirties patalpas tvarkingas.</li>
+              <li>Išeinant iš pirties, išjungti visur apšvietimą.</li>
+              <li>Išeinant iš pirties, užrakinti pirties pastato duris, raktą palikti dėžutėje, kur jį ir radote, dėžutę užrakinti.</li>
+            </ul>
+
+            <p className="mb-6">
+              Už padarytą materialinę žalą lankytojai atsako LR įstatymų numatyta tvarka. Šeimininkams nuostoliai padengiami prieš išvykstant.
+            </p>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <button
+              onClick={() => setShowRules(false)}
+              className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-medium transition-colors"
+            >
+              Grįžti į rezervaciją
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (showSummary) {
     return (
@@ -419,213 +556,252 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+        {step === 1 ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Atvykimo data
+                </label>
+                <DatePicker
+                  selected={bookingDetails.checkIn}
+                  onChange={(date) => handleDateChange('checkIn', date)}
+                  minDate={new Date()}
+                  excludeDates={bookedDates}
+                  dateFormat="yyyy-MM-dd"
+                  locale={lt}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+                  placeholderText="Pasirinkite datą"
+                  showPopperArrow={false}
+                  calendarClassName="availability-calendar"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Išvykimo data
+                </label>
+                <DatePicker
+                  selected={bookingDetails.checkOut}
+                  onChange={(date) => handleDateChange('checkOut', date)}
+                  minDate={bookingDetails.checkIn || new Date()}
+                  excludeDates={bookedDates}
+                  dateFormat="yyyy-MM-dd"
+                  locale={lt}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+                  placeholderText="Pasirinkite datą"
+                  showPopperArrow={false}
+                  calendarClassName="availability-calendar"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Atvykimo data
+                Svečių skaičius
               </label>
-              <DatePicker
-                selected={bookingDetails.checkIn}
-                onChange={(date) => handleDateChange('checkIn', date)}
-                minDate={new Date()}
-                excludeDates={bookedDates}
-                dateFormat="yyyy-MM-dd"
-                locale={lt}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
-                placeholderText="Pasirinkite datą"
-                showPopperArrow={false}
-                calendarClassName="availability-calendar"
-              />
+              <div className="relative">
+                <Users className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="number"
+                  min="1"
+                  max="4"
+                  value={bookingDetails.numberOfGuests || 2}
+                  onChange={(e) => setBookingDetails({ ...bookingDetails, numberOfGuests: parseInt(e.target.value) })}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Išvykimo data
-              </label>
-              <DatePicker
-                selected={bookingDetails.checkOut}
-                onChange={(date) => handleDateChange('checkOut', date)}
-                minDate={bookingDetails.checkIn || new Date()}
-                excludeDates={bookedDates}
-                dateFormat="yyyy-MM-dd"
-                locale={lt}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
-                placeholderText="Pasirinkite datą"
-                showPopperArrow={false}
-                calendarClassName="availability-calendar"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Vardas Pavardė
-            </label>
-            <input
-              type="text"
-              value={bookingDetails.guestName || ''}
-              onChange={(e) => setBookingDetails({ ...bookingDetails, guestName: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Įveskite vardą ir pavardę"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              El. pašto adresas
-            </label>
-            <input
-              type="email"
-              value={bookingDetails.guestEmail || ''}
-              onChange={(e) => setBookingDetails({ ...bookingDetails, guestEmail: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Įveskite el. paštą"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Šalis
-            </label>
-            <div className="relative">
-              <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={bookingDetails.country || ''}
-                onChange={(e) => setBookingDetails({ ...bookingDetails, country: e.target.value })}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="Įveskite šalį"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Telefono numeris
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="tel"
-                value={bookingDetails.phoneNumber || ''}
-                onChange={(e) => setBookingDetails({ ...bookingDetails, phoneNumber: e.target.value })}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="+370"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Svečių skaičius
-            </label>
-            <div className="relative">
-              <Users className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="number"
-                min="1"
-                max="4"
-                value={bookingDetails.numberOfGuests || 2}
-                onChange={(e) => setBookingDetails({ ...bookingDetails, numberOfGuests: parseInt(e.target.value) })}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={bookingDetails.hasPets || false}
-                onChange={(e) => setBookingDetails({ ...bookingDetails, hasPets: e.target.checked })}
-                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <span className="text-gray-700">Augintinio mokestis (10€)</span>
-            </label>
-
-            {apartment.id === 'pikulas' && (
+            <div className="space-y-4">
               <label className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={bookingDetails.extraBed || false}
-                  onChange={(e) => setBookingDetails({ ...bookingDetails, extraBed: e.target.checked })}
+                  checked={bookingDetails.hasPets || false}
+                  onChange={(e) => setBookingDetails({ ...bookingDetails, hasPets: e.target.checked })}
                   className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <span className="text-gray-700">Papildoma lova (15€)</span>
+                <span className="text-gray-700">Augintinio mokestis (10€)</span>
               </label>
-            )}
-          </div>
 
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Nuolaidos kodas"
-            />
-            <button
-              type="button"
-              onClick={handleApplyCoupon}
-              disabled={isValidatingCoupon}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 disabled:opacity-50 transition-colors"
-            >
-              {isValidatingCoupon ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Tag className="w-5 h-5" />
+              {apartment.id === 'pikulas' && (
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={bookingDetails.extraBed || false}
+                    onChange={(e) => setBookingDetails({ ...bookingDetails, extraBed: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className="text-gray-700">Papildoma lova (15€)</span>
+                </label>
               )}
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-6 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Kaina už naktį</span>
+                <span className="font-medium">{apartment.price_per_night}€</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Naktų skaičius</span>
+                <span className="font-medium">{numberOfNights}</span>
+              </div>
+              {bookingDetails.hasPets && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Augintinio mokestis</span>
+                  <span className="font-medium">10€</span>
+                </div>
+              )}
+              {apartment.id === 'pikulas' && bookingDetails.extraBed && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Papildoma lova</span>
+                  <span className="font-medium">15€</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-lg font-bold pt-3 border-t border-gray-200">
+                <span>Viso</span>
+                <span>{totalPrice.toFixed(2)}€</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleNextStep}
+              className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center gap-2"
+            >
+              <ArrowRight className="w-5 h-5" />
+              Tęsti rezervaciją
             </button>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Vardas Pavardė
+              </label>
+              <input
+                type="text"
+                value={bookingDetails.guestName || ''}
+                onChange={(e) => setBookingDetails({ ...bookingDetails, guestName: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Įveskite vardą ir pavardę"
+              />
+            </div>
 
-          {appliedCoupon && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
-              <Check className="w-5 h-5" />
-              <p>Pritaikyta nuolaida: {appliedCoupon.discount_percent}%</p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                El. pašto adresas
+              </label>
+              <input
+                type="email"
+                value={bookingDetails.guestEmail || ''}
+                onChange={(e) => setBookingDetails({ ...bookingDetails, guestEmail: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Įveskite el. paštą"
+              />
             </div>
-          )}
 
-          <div className="bg-gray-50 rounded-xl p-6 space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Kaina už naktį</span>
-              <span className="font-medium">{apartment.price_per_night}€</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Naktų skaičius</span>
-              <span className="font-medium">{numberOfNights}</span>
-            </div>
-            {bookingDetails.hasPets && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Augintinio mokestis</span>
-                <span className="font-medium">10€</span>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Šalis
+              </label>
+              <div className="relative">
+                <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={bookingDetails.country || ''}
+                  onChange={(e) => setBookingDetails({ ...bookingDetails, country: e.target.value })}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                  placeholder="Įveskite šalį"
+                />
               </div>
-            )}
-            {apartment.id === 'pikulas' && bookingDetails.extraBed && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Papildoma lova</span>
-                <span className="font-medium">15€</span>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Telefono numeris
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="tel"
+                  value={bookingDetails.phoneNumber || ''}
+                  onChange={(e) => setBookingDetails({ ...bookingDetails, phoneNumber: e.target.value })}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                  placeholder="+370"
+                />
               </div>
-            )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Nuolaidos kodas"
+              />
+              <button
+                type="button"
+                onClick={handleApplyCoupon}
+                disabled={isValidatingCoupon}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 disabled:opacity-50 transition-colors"
+              >
+                {isValidatingCoupon ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Tag className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+
             {appliedCoupon && (
-              <div className="flex justify-between items-center text-green-600">
-                <span>Nuolaida ({appliedCoupon.discount_percent}%)</span>
-                <span>-{(numberOfNights * apartment.price_per_night * (appliedCoupon.discount_percent / 100)).toFixed(2)}€</span>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
+                <Check className="w-5 h-5" />
+                <p>Pritaikyta nuolaida: {appliedCoupon.discount_percent}%</p>
               </div>
             )}
-            <div className="flex justify-between items-center text-lg font-bold pt-3 border-t border-gray-200">
-              <span>Viso</span>
-              <span>{totalPrice.toFixed(2)}€</span>
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center gap-2"
-          >
-            <Calendar className="w-5 h-5" />
-            Tęsti rezervaciją
-          </button>
-        </form>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="rules-acceptance"
+                  checked={acceptedRules}
+                  onChange={(e) => setAcceptedRules(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <div>
+                  <label htmlFor="rules-acceptance" className="text-gray-700 font-medium">
+                    Susipažinau su taisyklėmis ir jas gerbsiu
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowRules(true)}
+                    className="block text-sm text-primary hover:text-primary-dark mt-1 flex items-center gap-1"
+                  >
+                    <Info className="w-4 h-4" />
+                    Peržiūrėti taisykles
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-medium transition-colors hover:bg-gray-200"
+              >
+                Grįžti atgal
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              >
+                Tęsti
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

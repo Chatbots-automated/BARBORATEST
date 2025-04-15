@@ -14,11 +14,11 @@
 
 /* DatePicker Styles */
 .react-datepicker {
-  @apply font-sans border-0 shadow-xl rounded-2xl overflow-hidden;
+  @apply font-sans border-0 shadow-xl rounded-lg overflow-hidden;
 }
 
 .react-datepicker__header {
-  @apply bg-primary/5 border-0 rounded-t-2xl px-2;
+  @apply bg-gray-50 border-0 rounded-t-lg px-2;
 }
 
 .react-datepicker__month-container {
@@ -26,7 +26,7 @@
 }
 
 .react-datepicker__current-month {
-  @apply text-gray-900 font-semibold py-3;
+  @apply text-gray-900 font-medium py-3 capitalize;
 }
 
 .react-datepicker__day-names {
@@ -46,19 +46,23 @@
 }
 
 .react-datepicker__day:hover:not(.react-datepicker__day--disabled) {
-  @apply bg-primary/10 text-primary rounded-full transform scale-110;
+  @apply bg-gray-100 rounded-full;
 }
 
 .react-datepicker__day--selected {
-  @apply bg-primary text-white hover:bg-primary-dark rounded-full;
+  @apply bg-[#4A5859] text-white hover:bg-[#3A4445] rounded-full;
 }
 
 .react-datepicker__day--keyboard-selected {
-  @apply bg-primary text-white hover:bg-primary-dark rounded-full;
+  @apply bg-[#4A5859] text-white hover:bg-[#3A4445] rounded-full;
 }
 
 .react-datepicker__day--disabled {
-  @apply hover:bg-transparent cursor-not-allowed opacity-50;
+  @apply text-gray-300 hover:bg-transparent cursor-not-allowed;
+}
+
+.react-datepicker__day--in-range {
+  @apply bg-gray-100;
 }
 
 .react-datepicker__navigation {
@@ -81,44 +85,20 @@
   @apply z-[60];
 }
 
-/* Custom styles for the availability calendar */
-.availability-calendar .react-datepicker__day--disabled {
-  @apply bg-red-50 text-red-300 opacity-100 no-underline inline-block text-center;
+/* Form validation styles */
+.form-input-error {
+  @apply border-red-500 focus:ring-red-500 focus:border-red-500;
 }
 
-.availability-calendar .react-datepicker__day:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
-  @apply bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 inline-block text-center;
+.form-error-message {
+  @apply text-red-500 text-sm mt-1;
 }
 
-.availability-calendar .react-datepicker__day--selected {
-  @apply bg-primary text-white ring-2 ring-primary ring-offset-2;
+/* Confirmation message styles */
+.booking-confirmation {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50;
 }
 
-/* Hover effects */
-.availability-calendar .react-datepicker__day:hover:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
-  @apply transform scale-110 transition-transform;
-}
-
-/* Today's date highlight */
-.availability-calendar .react-datepicker__day--today {
-  @apply font-bold ring-2 ring-primary/30 ring-offset-2;
-}
-
-/* Fix for day alignment */
-.react-datepicker__week {
-  @apply flex justify-between;
-}
-
-.react-datepicker__day {
-  @apply w-8 h-8 flex items-center justify-center;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.6s ease-out forwards;
+.booking-confirmation-content {
+  @apply bg-white rounded-lg p-8 max-w-md w-full text-center;
 }

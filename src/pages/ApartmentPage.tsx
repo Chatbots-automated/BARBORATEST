@@ -14,6 +14,10 @@ export function ApartmentPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     async function fetchApartment() {
       try {
         const { data, error } = await supabase

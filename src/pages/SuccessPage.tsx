@@ -26,6 +26,10 @@ export function SuccessPage() {
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const params = Object.fromEntries(searchParams.entries());
     if (Object.keys(params).length > 0) {
       setBookingDetails(params as BookingDetails);

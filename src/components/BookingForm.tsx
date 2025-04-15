@@ -3,7 +3,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { format, differenceInDays, eachDayOfInterval, parseISO, isSameDay, subDays } from 'date-fns';
 import { lt } from 'date-fns/locale';
-import { Calendar, Tag, X, Check, Loader2, AlertCircle, Users, Phone, Globe, Info, ArrowRight } from 'lucide-react';
+import { Calendar, Tag, X, Check, Loader2, AlertCircle, Users, Phone, Globe, Info } from 'lucide-react';
 import { Apartment, BookingDetails, Coupon } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -390,7 +390,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
               <li>Pirties reikiamą tekstilę, svečiai įsipareigoja turėti savo asmeninę (rankšluosčiai, chalatai, šlepetės ir pan).</li>
             </ul>
 
-            <h3 className="text-lg font-bold mb-4">Pirtyje Druska draudžiama</h3>
+            <h3 className="text-lg font-bold mb-4">PIRTYJE DRUSKA DRAUDŽIAMA</h3>
             <ul className="list-disc pl-5 mb-6">
               <li>Pirtyje naudoti savo šveitiklius, aliejus, mesų ar kitas priemones.</li>
               <li>Šokinėti nuo lieptelio į ežerą. Ežeras seklus ir yra dumblo.</li>
@@ -534,7 +534,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative my-8">
+      <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl relative my-8">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -558,7 +558,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
 
         {step === 1 ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Atvykimo data
@@ -573,7 +573,6 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
                   placeholderText="Pasirinkite datą"
                   showPopperArrow={false}
-                  calendarClassName="availability-calendar"
                 />
               </div>
               <div>
@@ -590,7 +589,6 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-white"
                   placeholderText="Pasirinkite datą"
                   showPopperArrow={false}
-                  calendarClassName="availability-calendar"
                 />
               </div>
             </div>
@@ -665,9 +663,8 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
 
             <button
               onClick={handleNextStep}
-              className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center gap-2"
+              className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
-              <ArrowRight className="w-5 h-5" />
               Tęsti rezervaciją
             </button>
           </div>
@@ -771,7 +768,7 @@ export function BookingForm({ apartment, onClose }: BookingFormProps) {
                 />
                 <div>
                   <label htmlFor="rules-acceptance" className="text-gray-700 font-medium">
-                    Susipažinau su taisyklėmis ir jas gerbsiu
+                    Susipažinau su Vidaus tvarkos taisyklėmis ir su jomis sutinku
                   </label>
                   <button
                     type="button"

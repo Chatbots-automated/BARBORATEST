@@ -78,19 +78,21 @@ export function HomePage() {
       </section>
 
       {/* Contact Section */}
-      <section className="contact-section">
-        <div className="contact-container">
-          <div className="contact-content">
-            <h2 className="contact-heading">Kontaktai</h2>
-            <div className="space-y-4">
-              <div className="contact-info">
-                <Mail className="w-5 h-5" />
-                <span>info@giriohorizontas.lt</span>
-              </div>
-              <div className="contact-info">
-                <Phone className="w-5 h-5" />
-                <span>+370 600 00000</span>
-              </div>
+      <section className="py-24 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-light mb-8">Kontaktai</h2>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Mail className="w-5 h-5 text-gray-600" />
+              <a href="mailto:info@giriohorizontas.lt" className="text-gray-600 hover:text-gray-900 transition-colors">
+                info@giriohorizontas.lt
+              </a>
+            </div>
+            <div className="flex items-center gap-3">
+              <Phone className="w-5 h-5 text-gray-600" />
+              <a href="tel:+37061234567" className="text-gray-600 hover:text-gray-900 transition-colors">
+                +370 612 34567
+              </a>
             </div>
           </div>
         </div>

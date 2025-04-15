@@ -3,6 +3,7 @@ import { ApartmentCard } from '../components/ApartmentCard';
 import { BookingForm } from '../components/BookingForm';
 import { Apartment } from '../types';
 import { supabase } from '../lib/supabase';
+import { Mail, Phone } from 'lucide-react';
 
 export function HomePage() {
   const [selectedApartment, setSelectedApartment] = useState<Apartment | null>(null);
@@ -77,12 +78,19 @@ export function HomePage() {
       </section>
 
       {/* Contact Section */}
-      <section className="py-24 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-left">
-            <h2 className="text-3xl font-light mb-6">Kontaktai</h2>
-            <div className="space-y-2">
-              <p className="text-gray-600">El. paštas: info@giriohorizontas.lt</p>
+      <section className="contact-section">
+        <div className="contact-container">
+          <div className="contact-content">
+            <h2 className="contact-heading">Kontaktai</h2>
+            <div className="space-y-4">
+              <div className="contact-info">
+                <Mail className="w-5 h-5" />
+                <span>info@giriohorizontas.lt</span>
+              </div>
+              <div className="contact-info">
+                <Phone className="w-5 h-5" />
+                <span>+370 600 00000</span>
+              </div>
             </div>
           </div>
         </div>
